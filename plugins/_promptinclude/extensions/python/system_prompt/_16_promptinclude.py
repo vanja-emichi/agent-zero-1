@@ -34,6 +34,8 @@ class PromptInclude(Extension):
             max_file_count=config.get("max_file_count", 50),
             max_total_tokens=config.get("max_total_tokens", 8000),
             gitignore=config.get("gitignore", ""),
+            max_file_size=config.get("max_file_size", 10_240),
+            max_total_size=config.get("max_total_size", 51_200),
         )
 
         if not result["files"] and result["skipped_count"] == 0:
@@ -68,18 +70,24 @@ def _format_includes(agent: Agent, result: ScanResult) -> str:
     lines: list[str] = []
 
     for entry in result["files"]:
+        rel_path = entry["path"]
+
         if entry["status"] == "skipped":
-            lines.append(f"{entry['path']} !!! skipped to fit")
+            lines.append(f"<!-- promptinclude: {rel_path} -->")
+            lines.append(f"{rel_path} !!! skipped to fit")
+            lines.append(f"<!-- /promptinclude: {rel_path} -->")
             continue
 
         suffix = " !!! cropped to fit" if entry["status"] == "cropped" else ""
         block = agent.read_prompt(
             "fw.promptinclude.includes.md",
-            path=entry["path"],
+            path=rel_path,
             suffix=suffix,
             content=entry["content"],
         )
+        lines.append(f"<!-- promptinclude: {rel_path} -->")
         lines.append(block)
+        lines.append(f"<!-- /promptinclude: {rel_path} -->")
 
     if result["skipped_count"] > 0:
         lines.append(f"!!! {result['skipped_count']} more files skipped to fit")

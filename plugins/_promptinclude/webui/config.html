@@ -79,6 +79,32 @@
 
                 <div class="field">
                     <div class="field-label">
+                        <div class="field-title">Max file size (bytes)</div>
+                        <div class="field-description">
+                            Byte-size limit per individual file. Files exceeding this are skipped with a warning.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" min="1024" max="1048576"
+                            x-model.number="config.max_file_size" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
+                        <div class="field-title">Max total size (bytes)</div>
+                        <div class="field-description">
+                            Total byte-size budget for all included files combined.
+                        </div>
+                    </div>
+                    <div class="field-control">
+                        <input type="number" min="10240" max="5242880"
+                            x-model.number="config.max_total_size" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">
                         <div class="field-title">Gitignore patterns</div>
                         <div class="field-description">
                             Gitignore-style patterns to skip directories/files during search.

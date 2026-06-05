@@ -1,12 +1,16 @@
 """Scan workdir for promptinclude files. No agent/tool dependencies."""
 
 import fnmatch
+import logging
 import os
 from typing import Literal, TypedDict
 
 from pathspec import PathSpec
 
 from helpers import tokens
+
+
+logger = logging.getLogger(__name__)
 
 
 # ------------------------------------------------------------------
@@ -38,6 +42,8 @@ def scan_promptinclude_files(
     max_file_count: int = 50,
     max_total_tokens: int = 8000,
     gitignore: str = "",
+    max_file_size: int = 10_240,
+    max_total_size: int = 51_200,
 ) -> ScanResult:
     ignore_spec = _build_ignore_spec(gitignore)
     matched = _find_matching_files(root, name_pattern, max_depth, ignore_spec)
@@ -45,12 +51,37 @@ def scan_promptinclude_files(
 
     result_files: list[FileEntry] = []
     total_tokens_used = 0
+    total_bytes_used = 0
     skipped_count = 0
     budget_exhausted = False
 
     for path in matched:
         if budget_exhausted or len(result_files) >= max_file_count:
             skipped_count += 1
+            continue
+
+        # --- byte-size checks before reading ---
+        try:
+            file_size = os.path.getsize(path)
+        except OSError:
+            skipped_count += 1
+            continue
+
+        if file_size > max_file_size:
+            logger.warning(
+                "promptinclude: skipping %s — file size %d bytes exceeds per-file limit %d bytes",
+                path, file_size, max_file_size,
+            )
+            skipped_count += 1
+            continue
+
+        if total_bytes_used + file_size > max_total_size:
+            logger.warning(
+                "promptinclude: skipping %s — adding %d bytes would exceed total size limit %d bytes (used %d)",
+                path, file_size, max_total_size, total_bytes_used,
+            )
+            skipped_count += 1
+            budget_exhausted = True
             continue
 
         try:
@@ -82,6 +113,7 @@ def scan_promptinclude_files(
                 trimmed = tokens.trim_to_tokens(raw, remaining, direction="start")
                 trimmed_count = tokens.count_tokens(trimmed)
                 total_tokens_used += path_tokens + trimmed_count
+                total_bytes_used += len(trimmed.encode("utf-8", errors="replace"))
                 result_files.append(FileEntry(
                     path=path, content=trimmed,
                     token_count=trimmed_count, status="cropped",
@@ -98,12 +130,14 @@ def scan_promptinclude_files(
             trimmed = tokens.trim_to_tokens(raw, max_file_tokens, direction="start")
             trimmed_count = tokens.count_tokens(trimmed)
             total_tokens_used += path_tokens + trimmed_count
+            total_bytes_used += len(trimmed.encode("utf-8", errors="replace"))
             result_files.append(FileEntry(
                 path=path, content=trimmed,
                 token_count=trimmed_count, status="cropped",
             ))
         else:
             total_tokens_used += path_tokens + file_tokens
+            total_bytes_used += len(raw.encode("utf-8", errors="replace"))
             result_files.append(FileEntry(
                 path=path, content=raw,
                 token_count=file_tokens, status="ok",
