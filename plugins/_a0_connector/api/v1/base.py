@@ -1,7 +1,32 @@
+"""Base classes for A0 Connector v1 API handlers.
+
+CSRF posture:
+    Both PublicConnectorApiHandler and ProtectedConnectorApiHandler bypass CSRF
+    protection (requires_csrf() returns False). This is intentional: connector
+    endpoints are designed for CLI localhost clients that authenticate via session
+    cookies but cannot easily provide a CSRF token (programmatic API consumers).
+
+    The csrf_exempt = True class attribute documents this exemption explicitly
+    so that security audits and future contributors can see the decision at a
+    glance without tracing through the requires_csrf() override chain.
+
+    Mitigations in place:
+    - Session authentication is required on all protected endpoints.
+    - Startup warning fires when connector endpoints are reachable from
+      non-localhost origins (see hooks.py).
+    - Optional per-IP rate limiting for non-localhost callers
+      (see helpers.csrf_posture).
+"""
+from __future__ import annotations
+
 from helpers.api import ApiHandler
 
 
 class PublicConnectorApiHandler(ApiHandler):
+    # CSRF exempt: public discovery endpoint, no state mutation.
+    # Only used by Capabilities handler to advertise features to connecting CLIs.
+    csrf_exempt: bool = True
+
     @classmethod
     def requires_auth(cls) -> bool:
         return False
@@ -16,6 +41,13 @@ class PublicConnectorApiHandler(ApiHandler):
 
 
 class ProtectedConnectorApiHandler(ApiHandler):
+    # CSRF exempt: these endpoints serve the A0 CLI running on localhost.
+    # CLI clients authenticate via session but cannot send CSRF tokens in
+    # programmatic JSON API calls. All endpoints are POST-based and require
+    # an authenticated session. When the server is exposed beyond localhost,
+    # startup warnings and optional rate limiting apply.
+    csrf_exempt: bool = True
+
     @classmethod
     def requires_auth(cls) -> bool:
         return True
