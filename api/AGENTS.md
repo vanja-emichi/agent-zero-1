@@ -10,6 +10,17 @@
 - Files in this directory are discovered by the route registration layer in `helpers/api.py` and WebSocket registration code.
 - `ws_*.py` files define WebSocket namespaces or handlers through `helpers.ws.WsHandler`.
 - Plugin-provided API handlers belong inside plugin `api/` folders and follow the same base contracts.
+- User-provided API handlers in `usr/api/` are also discovered, with higher precedence than core `api/` handlers (see override model below).
+
+## Dispatch Priority
+
+The API dispatcher (`helpers/api.py` `register_api_route()`) resolves handlers in this order:
+
+1. **`usr/api/<path>.py`** — user override handlers (highest precedence, shadow core)
+2. **`api/<path>.py`** — core built-in handlers
+3. **`plugins/<name>/api/<handler>.py`** — plugin handlers (only for `plugins/`-prefixed routes)
+
+A user handler in `usr/api/` with the same filename as a core handler replaces it entirely.
 
 ## Local Contracts
 

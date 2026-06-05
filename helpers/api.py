@@ -214,8 +214,17 @@ def register_api_route(app: Flask, lock: ThreadLockType) -> None:
             return await cached()
 
         # Resolve file path for the handler
-        # Try built-in api folder first, then plugin api folders
+        # Priority: usr/api (user overrides) > built-in api > plugin api
         handler_cls: type[ApiHandler] | None = None
+
+        # Check usr/api/<path>.py (user overrides take precedence)
+        usr_file = files.get_abs_path(files.USER_DIR, files.API_DIR, f"{path}.py")
+        if files.is_in_dir(usr_file, files.get_abs_path(files.USER_DIR, files.API_DIR)) and files.exists(
+            usr_file
+        ):
+            classes = load_classes_from_file(usr_file, ApiHandler)
+            if classes:
+                handler_cls = classes[0]
 
         # Check built-in python/api/<path>.py
         builtin_file = files.get_abs_path(f"api/{path}.py")
