@@ -17,6 +17,7 @@
 - Preserve numeric prefixes when ordering affects prompt construction, stream masking, persistence, or cleanup.
 - Use `AgentContext` from `agent` when context access is needed.
 - Do not log unmasked secrets, raw hidden prompt sections, or private user data.
+- `tool_execute_before/_10_unmask_secrets` resolves secret placeholders only in args whose names match `SECRET_ARG_NAMES` (e.g., `token`, `api_key`, `password`). Content-bearing args (`content`, `text`, `code`, etc.) and unrecognized args are skipped with a warning log. Add new arg names to the appropriate frozenset when extending tool interfaces.
 
 ## Work Guidance
 
