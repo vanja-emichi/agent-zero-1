@@ -50,7 +50,7 @@
 - v1 API handlers extend `PublicConnectorApiHandler` or `ProtectedConnectorApiHandler` from `api/v1/base.py`, not the core `ApiHandler` directly.
 - All connector API handlers bypass CSRF protection (`requires_csrf() -> False`, `csrf_exempt = True`). This is intentional: CLI clients authenticate via session cookies but cannot send CSRF tokens in programmatic JSON API calls. See `base.py` module docstring for the full rationale and mitigations.
 - A startup warning fires when the server binds to `0.0.0.0` or a public interface, alerting operators that connector endpoints are reachable beyond localhost (`hooks.py` → `helpers/csrf_posture.py` → `extensions/.../startup_migration/_10_connector_csrf_warning.py`).
-- Optional per-IP rate limiting for non-localhost callers is available via `helpers/csrf_posture.py`, controlled by `A0_CONNECTOR_RATE_LIMIT_PER_MINUTE` (default 100) and `A0_CONNECTOR_RATE_LIMIT_ENABLED` env vars.
+- Per-IP rate limiting for non-localhost callers is enforced on every `ProtectedConnectorApiHandler` request via `helpers/csrf_posture.py`, controlled by `A0_CONNECTOR_RATE_LIMIT_PER_MINUTE` (default 100) and `A0_CONNECTOR_RATE_LIMIT_ENABLED` env vars.
 - Prompt files under `prompts/` are resolved through the standard prompt precedence chain. The plugin does not override core prompts.
 - Skills under `skills/` are loaded by the framework skill system and guide agents on safe host CLI, host file editing, host computer use (per-platform), and CLI setup workflows.
 - The `_70_include_remote_tool_stubs` extension appends the `computer_use_remote` prompt only when the tool is not already present in the system prompt (checks for the `"tool_name": "computer_use_remote"` marker).

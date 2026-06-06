@@ -42,8 +42,8 @@ def scan_promptinclude_files(
     max_file_count: int = 50,
     max_total_tokens: int = 8000,
     gitignore: str = "",
-    max_file_size: int = 10_240,
-    max_total_size: int = 51_200,
+    max_file_size: int = 10240,
+    max_total_size: int = 51200,
 ) -> ScanResult:
     ignore_spec = _build_ignore_spec(gitignore)
     matched = _find_matching_files(root, name_pattern, max_depth, ignore_spec)

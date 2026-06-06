@@ -40,7 +40,7 @@ Version 1 REST API endpoints exposed by the A0 Connector plugin for CLI and exte
 - All handlers inherit from `base.PublicConnectorApiHandler` or `base.ProtectedConnectorApiHandler`.
 - Both base classes carry `csrf_exempt = True` and return `requires_csrf() -> False`, intentionally bypassing CSRF for localhost CLI clients that cannot send CSRF tokens in programmatic JSON API calls.
 - A startup warning fires when the server binds to `0.0.0.0` or a public interface (`hooks.py` → `helpers/csrf_posture.py`).
-- Optional per-IP rate limiting for non-localhost callers via `helpers/csrf_posture.py` (env: `A0_CONNECTOR_RATE_LIMIT_PER_MINUTE`, `A0_CONNECTOR_RATE_LIMIT_ENABLED`).
+- Per-IP rate limiting for non-localhost callers is enforced on every `ProtectedConnectorApiHandler` request via `helpers/csrf_posture.py` (env: `A0_CONNECTOR_RATE_LIMIT_PER_MINUTE`, `A0_CONNECTOR_RATE_LIMIT_ENABLED`).
 - Protected endpoints require an authenticated CLI session via the connector WS channel.
 - Each handler receives `input: dict` and `request: Request`, returns `dict | Response`.
 - Handlers lazy-import core modules to avoid circular imports at plugin load.

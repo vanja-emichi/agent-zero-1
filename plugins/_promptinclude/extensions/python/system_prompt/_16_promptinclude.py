@@ -34,8 +34,8 @@ class PromptInclude(Extension):
             max_file_count=config.get("max_file_count", 50),
             max_total_tokens=config.get("max_total_tokens", 8000),
             gitignore=config.get("gitignore", ""),
-            max_file_size=config.get("max_file_size", 10_240),
-            max_total_size=config.get("max_total_size", 51_200),
+            max_file_size=config.get("max_file_size", 10240),
+            max_total_size=config.get("max_total_size", 51200),
         )
 
         if not result["files"] and result["skipped_count"] == 0:

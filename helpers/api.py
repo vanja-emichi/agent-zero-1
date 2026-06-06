@@ -226,14 +226,15 @@ def register_api_route(app: Flask, lock: ThreadLockType) -> None:
             if classes:
                 handler_cls = classes[0]
 
-        # Check built-in python/api/<path>.py
-        builtin_file = files.get_abs_path(f"api/{path}.py")
-        if files.is_in_dir(builtin_file, files.get_abs_path("api")) and files.exists(
-            builtin_file
-        ):
-            classes = load_classes_from_file(builtin_file, ApiHandler)
-            if classes:
-                handler_cls = classes[0]
+        # Check built-in python/api/<path>.py (only if no usr override found)
+        if handler_cls is None:
+            builtin_file = files.get_abs_path(f"api/{path}.py")
+            if files.is_in_dir(builtin_file, files.get_abs_path("api")) and files.exists(
+                builtin_file
+            ):
+                classes = load_classes_from_file(builtin_file, ApiHandler)
+                if classes:
+                    handler_cls = classes[0]
 
         # Check plugin api folders: path format plugins/<plugin_name>/<handler>
         if handler_cls is None and path.startswith("plugins/"):

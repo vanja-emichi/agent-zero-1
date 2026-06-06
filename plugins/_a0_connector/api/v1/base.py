@@ -14,10 +14,12 @@ CSRF posture:
     - Session authentication is required on all protected endpoints.
     - Startup warning fires when connector endpoints are reachable from
       non-localhost origins (see hooks.py).
-    - Optional per-IP rate limiting for non-localhost callers
-      (see helpers.csrf_posture).
+    - Per-IP rate limiting for non-localhost callers enforced on every
+      protected request (see helpers.csrf_posture).
 """
 from __future__ import annotations
+
+from flask import Request, Response
 
 from helpers.api import ApiHandler
 
@@ -45,7 +47,7 @@ class ProtectedConnectorApiHandler(ApiHandler):
     # CLI clients authenticate via session but cannot send CSRF tokens in
     # programmatic JSON API calls. All endpoints are POST-based and require
     # an authenticated session. When the server is exposed beyond localhost,
-    # startup warnings and optional rate limiting apply.
+    # startup warnings and per-IP rate limiting apply.
     csrf_exempt: bool = True
 
     @classmethod
@@ -59,3 +61,16 @@ class ProtectedConnectorApiHandler(ApiHandler):
     @classmethod
     def requires_api_key(cls) -> bool:
         return False
+
+    async def handle_request(self, request: Request) -> Response:
+        """Enforce per-IP rate limiting before processing protected requests."""
+        from plugins._a0_connector.helpers.csrf_posture import check_rate_limit
+
+        remote_ip = str(request.remote_addr or "")
+        if not check_rate_limit(remote_ip):
+            return Response(
+                response='{"error": "Rate limit exceeded"}',
+                status=429,
+                mimetype="application/json",
+            )
+        return await super().handle_request(request)

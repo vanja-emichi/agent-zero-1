@@ -1,7 +1,8 @@
 import logging
+import re
 
 from helpers.extension import Extension
-from helpers.secrets import get_secrets_manager
+from helpers.secrets import get_secrets_manager, ALIAS_PATTERN
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,9 @@ CONTENT_ARG_NAMES = frozenset({
     "message", "body", "html", "url", "query", "description", "prompt",
     "system_prompt",
 })
+
+# Precompiled pattern for detecting alias placeholders in values
+_ALIAS_RE = re.compile(ALIAS_PATTERN)
 
 
 class UnmaskToolSecrets(Extension):
@@ -46,9 +50,13 @@ class UnmaskToolSecrets(Extension):
                     "Skipping placeholder resolution in content arg '%s'",
                     k,
                 )
+            elif _ALIAS_RE.search(v):
+                # Unrecognized arg name, but value contains an alias pattern — resolve it
+                # so tools using custom arg names for secrets still work.
+                tool_args[k] = secrets_mgr.replace_placeholders(v)
             else:
-                logger.warning(
+                logger.debug(
                     "Skipping placeholder resolution for unrecognized arg '%s' "
-                    "(not in SECRET_ARG_NAMES or CONTENT_ARG_NAMES)",
+                    "(no alias pattern detected in value)",
                     k,
                 )
